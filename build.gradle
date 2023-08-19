@@ -2,8 +2,8 @@ plugins {
     id 'java'
 }
 
-group = 'com.github.federicozanardo'
-version = '0.1.0'
+group = 'storage.core'
+version = '0.1.1'
 
 repositories {
     mavenCentral()
