@@ -11,7 +11,9 @@ repositories {
 }
 
 dependencies {
-    //implementation 'com.github.federicozanardo:lcp-lib:v0.1.14'
+    implementation 'com.github.federicozanardo:lcp-lib:v0.1.27'
+
+    // implementation 'org.rocksdb:rocksdbjni:8.3.2'
 
     implementation 'org.iq80.leveldb:leveldb-api:0.12'
     implementation 'org.iq80.leveldb:leveldb:0.12'
