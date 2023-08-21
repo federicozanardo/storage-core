@@ -1,7 +1,7 @@
-package service;
+package storage.module.services;
 
-import constants.Constants;
-import exceptions.storage.ContractNotFoundException;
+import storage.constants.Constants;
+import storage.exceptions.ContractNotFoundException;
 import models.contract.Contract;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
@@ -14,11 +14,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
-public class ContractsStorage extends StorageSerializer<Contract> {
+public class ContractsStorageService extends StorageSerializer<Contract> {
     private DB levelDb;
     private final ReentrantLock mutex;
 
-    public ContractsStorage() {
+    public ContractsStorageService() {
         this.mutex = new ReentrantLock();
     }
 

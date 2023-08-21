@@ -1,8 +1,8 @@
-package service;
+package storage.module.services;
 
-import constants.Constants;
-import exceptions.storage.OwnershipNotFoundException;
-import exceptions.storage.OwnershipsNotFoundException;
+import storage.constants.Constants;
+import storage.exceptions.OwnershipNotFoundException;
+import storage.exceptions.OwnershipsNotFoundException;
 import models.contract.Ownership;
 import models.contract.SingleUseSeal;
 import org.iq80.leveldb.DB;
@@ -18,11 +18,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
-public class OwnershipsStorage extends StorageSerializer<ArrayList<Ownership>> {
+public class OwnershipsStorageService extends StorageSerializer<ArrayList<Ownership>> {
     private DB levelDb;
     private final ReentrantLock mutex;
 
-    public OwnershipsStorage() {
+    public OwnershipsStorageService() {
         this.mutex = new ReentrantLock();
     }
 
@@ -87,7 +87,7 @@ public class OwnershipsStorage extends StorageSerializer<ArrayList<Ownership>> {
      * @param address: it is needed in order to search the funds associated.
      * @return the funds associated to the address.
      * @throws IOException:                 throws when an error occur while opening or closing the connection with the storage.
-     * @throws OwnershipsNotFoundException: throws when there are no funds associated to the given address.
+     * @throws OwnershipsNotFoundException : throws when there are no funds associated to the given address.
      */
     public ArrayList<Ownership> getFunds(String address) throws IOException, OwnershipsNotFoundException {
         mutex.lock();

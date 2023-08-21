@@ -1,9 +1,9 @@
-package service;
+package storage.module.services;
 
-import constants.Constants;
-import exceptions.storage.AssetNotFoundException;
-import models.assets.Asset;
-import models.assets.FungibleAsset;
+import lcp.lib.models.assets.Asset;
+import lcp.lib.models.assets.FungibleAsset;
+import storage.constants.Constants;
+import storage.exceptions.AssetNotFoundException;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 
@@ -14,11 +14,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
-public class AssetsStorage extends StorageSerializer<Asset> {
+public class AssetsStorageService extends StorageSerializer<Asset> {
     private DB levelDb;
     private final ReentrantLock mutex;
 
-    public AssetsStorage() {
+    public AssetsStorageService() {
         this.mutex = new ReentrantLock();
     }
 
@@ -54,7 +54,7 @@ public class AssetsStorage extends StorageSerializer<Asset> {
      * @throws IOException:            throws when an error occur while opening or closing the connection with the storage.
      * @throws AssetNotFoundException: throws when the asset id is not referred to any asset saved in the storage.
      */
-    public Asset getAsset(String assetId) throws IOException, AssetNotFoundException {
+    public Asset getAssetInfo(String assetId) throws IOException, AssetNotFoundException {
         mutex.lock();
         levelDb = factory.open(new File(String.valueOf(Constants.ASSETS_PATH)), new Options());
 

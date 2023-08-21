@@ -1,4 +1,4 @@
-package service;
+package storage.module.services;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

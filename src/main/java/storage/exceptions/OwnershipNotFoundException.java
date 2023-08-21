@@ -1,4 +1,4 @@
-package exceptions.storage;
+package storage.exceptions;
 
 public class OwnershipNotFoundException extends Exception {
     public OwnershipNotFoundException() {

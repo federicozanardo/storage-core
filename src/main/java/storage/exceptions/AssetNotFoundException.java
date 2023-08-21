@@ -1,4 +1,4 @@
-package exceptions.storage;
+package storage.exceptions;
 
 public class AssetNotFoundException extends Exception {
     public AssetNotFoundException() {
