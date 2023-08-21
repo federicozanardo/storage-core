@@ -1,10 +1,10 @@
 package storage.module.services;
 
+import lcp.lib.models.ownership.Ownership;
+import lcp.lib.models.singleuseseal.SingleUseSeal;
 import storage.constants.Constants;
 import storage.exceptions.OwnershipNotFoundException;
 import storage.exceptions.OwnershipsNotFoundException;
-import models.contract.Ownership;
-import models.contract.SingleUseSeal;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 

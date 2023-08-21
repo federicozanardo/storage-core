@@ -81,4 +81,13 @@ public class StorageModule extends Module {
             return new ChannelMessage(this.getId(), new RequestNotFound(message.getPayload().getClass().getSimpleName()));
         }
     }
+
+    public void seed() {
+        try {
+            assetsStorageService.seed();
+            ownershipsStorageService.seed();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

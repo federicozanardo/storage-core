@@ -1,8 +1,8 @@
 package storage.module.services;
 
+import lcp.lib.models.contract.ContractInstance;
 import storage.constants.Constants;
 import storage.exceptions.ContractInstanceNotFoundException;
-import models.contract.ContractInstance;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 
