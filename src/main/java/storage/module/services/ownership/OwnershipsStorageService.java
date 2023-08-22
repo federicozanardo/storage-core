@@ -1,13 +1,14 @@
-package storage.module.services;
+package storage.module.services.ownership;
 
 import lcp.lib.models.ownership.Ownership;
 import lcp.lib.models.singleuseseal.Amount;
 import lcp.lib.models.singleuseseal.SingleUseSeal;
+import org.iq80.leveldb.DB;
+import org.iq80.leveldb.Options;
 import storage.constants.Constants;
 import storage.exceptions.OwnershipNotFoundException;
 import storage.exceptions.OwnershipsNotFoundException;
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.Options;
+import storage.module.services.StorageSerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
-public class OwnershipsStorageService extends StorageSerializer<ArrayList<Ownership>> {
+public class OwnershipsStorageService extends StorageSerializer<ArrayList<Ownership>> implements IOwnershipsStorageService {
     private DB levelDb;
     private final ReentrantLock mutex;
 
@@ -87,7 +88,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
      *
      * @param address: it is needed in order to search the funds associated.
      * @return the funds associated to the address.
-     * @throws IOException:                 throws when an error occur while opening or closing the connection with the storage.
+     * @throws IOException:                throws when an error occur while opening or closing the connection with the storage.
      * @throws OwnershipsNotFoundException : throws when there are no funds associated to the given address.
      */
     public ArrayList<Ownership> getFunds(String address) throws IOException, OwnershipsNotFoundException {
@@ -158,6 +159,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
     }
 
     // FIXME: return a boolean (true --> success, false --> otherwise)
+
     /**
      * This method allows to add new funds.
      *
@@ -192,6 +194,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
     }
 
     // FIXME: return a boolean (true --> success, false --> otherwise)
+
     /**
      * This method allows to make spent a ownership.
      *

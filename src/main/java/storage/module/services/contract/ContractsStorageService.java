@@ -1,10 +1,11 @@
-package storage.module.services;
+package storage.module.services.contract;
 
 import lcp.lib.models.contract.Contract;
-import storage.constants.Constants;
-import storage.exceptions.ContractNotFoundException;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
+import storage.constants.Constants;
+import storage.exceptions.ContractNotFoundException;
+import storage.module.services.StorageSerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
-public class ContractsStorageService extends StorageSerializer<Contract> {
+public class ContractsStorageService extends StorageSerializer<Contract> implements IContractsStorageService {
     private DB levelDb;
     private final ReentrantLock mutex;
 

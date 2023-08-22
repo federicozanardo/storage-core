@@ -1,11 +1,12 @@
-package storage.module.services;
+package storage.module.services.asset;
 
 import lcp.lib.models.assets.Asset;
 import lcp.lib.models.assets.FungibleAsset;
-import storage.constants.Constants;
-import storage.exceptions.AssetNotFoundException;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
+import storage.constants.Constants;
+import storage.exceptions.AssetNotFoundException;
+import storage.module.services.StorageSerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
-public class AssetsStorageService extends StorageSerializer<Asset> {
+public class AssetsStorageService extends StorageSerializer<Asset> implements IAssetsStorageService {
     private DB levelDb;
     private final ReentrantLock mutex;
 

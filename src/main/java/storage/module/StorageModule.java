@@ -39,10 +39,10 @@ import storage.models.dto.ownership.getfunds.GetFundsRequest;
 import storage.models.dto.ownership.getfunds.GetFundsResponse;
 import storage.models.dto.ownership.makeownershipspent.MakeOwnershipSpentRequest;
 import storage.models.dto.ownership.makeownershipspent.MakeOwnershipSpentResponse;
-import storage.module.services.AssetsStorageService;
-import storage.module.services.ContractInstancesStorageService;
-import storage.module.services.ContractsStorageService;
-import storage.module.services.OwnershipsStorageService;
+import storage.module.services.asset.AssetsStorageService;
+import storage.module.services.contract.ContractsStorageService;
+import storage.module.services.contractinstance.ContractInstancesStorageService;
+import storage.module.services.ownership.OwnershipsStorageService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,7 +64,8 @@ public class StorageModule extends Module {
 
     @Override
     public void send(String receiverModuleId, ChannelMessagePayload payload) {
-        logger.debug("[{}] payload: {}", new Object() {}.getClass().getEnclosingMethod().getName(), payload);
+        logger.debug("[{}] payload: {}", new Object() {
+        }.getClass().getEnclosingMethod().getName(), payload);
         ModuleChannel channel = this.findChannel(this.getId(), receiverModuleId);
 
         if (channel != null) {
@@ -76,12 +77,14 @@ public class StorageModule extends Module {
 
     @Override
     public void receive(ChannelMessage message) {
-        logger.debug("[{}] from: {}, payload: {}", new Object() {}.getClass().getEnclosingMethod().getName(), message.getSenderModuleId(), message.getPayload());
+        logger.debug("[{}] from: {}, payload: {}", new Object() {
+        }.getClass().getEnclosingMethod().getName(), message.getSenderModuleId(), message.getPayload());
     }
 
     @Override
     public ChannelMessage sendAndReceive(String receiverModuleId, ChannelMessagePayload payload) {
-        logger.debug("[{}] payload: {}", new Object() {}.getClass().getEnclosingMethod().getName(), payload);
+        logger.debug("[{}] payload: {}", new Object() {
+        }.getClass().getEnclosingMethod().getName(), payload);
         ModuleChannel channel = this.findChannel(this.getId(), receiverModuleId);
 
         if (channel != null) {
@@ -94,7 +97,8 @@ public class StorageModule extends Module {
 
     @Override
     public ChannelMessage receiveAndResponse(ChannelMessage message) {
-        logger.debug("[{}] from: {}, payload: {}", new Object() {}.getClass().getEnclosingMethod().getName(), message.getSenderModuleId(), message.getPayload());
+        logger.debug("[{}] from: {}, payload: {}", new Object() {
+        }.getClass().getEnclosingMethod().getName(), message.getSenderModuleId(), message.getPayload());
         ChannelMessagePayload payload = message.getPayload();
 
         if (payload instanceof GetAssetInfoRequest) {

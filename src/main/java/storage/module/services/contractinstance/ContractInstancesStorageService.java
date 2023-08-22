@@ -1,10 +1,11 @@
-package storage.module.services;
+package storage.module.services.contractinstance;
 
 import lcp.lib.models.contract.ContractInstance;
-import storage.constants.Constants;
-import storage.exceptions.ContractInstanceNotFoundException;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
+import storage.constants.Constants;
+import storage.exceptions.ContractInstanceNotFoundException;
+import storage.module.services.StorageSerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
-public class ContractInstancesStorageService extends StorageSerializer<ContractInstance> {
+public class ContractInstancesStorageService extends StorageSerializer<ContractInstance> implements IContractInstancesStorageService {
     public DB levelDb;
     private final ReentrantLock mutex;
 
@@ -102,6 +103,7 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
     }*/
 
     // FIXME: return a boolean (true --> success, false --> otherwise)
+
     /**
      * Store the updates of the state machine when a function has been called.
      *
@@ -133,6 +135,7 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
     }
 
     // FIXME: return a boolean (true --> success, false --> otherwise)
+
     /**
      * Store the updates of the state machine when an obligation function has been called.
      *
