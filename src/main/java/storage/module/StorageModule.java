@@ -6,17 +6,47 @@ import lcp.lib.communication.module.channel.ChannelMessagePayload;
 import lcp.lib.communication.module.channel.ModuleChannel;
 import lcp.lib.communication.module.channel.responses.RequestNotFound;
 import lcp.lib.models.assets.Asset;
+import lcp.lib.models.contract.Contract;
+import lcp.lib.models.contract.ContractInstance;
+import lcp.lib.models.ownership.Ownership;
+import lcp.lib.models.singleuseseal.SingleUseSeal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import storage.exceptions.AssetNotFoundException;
+import storage.exceptions.ContractInstanceNotFoundException;
+import storage.exceptions.ContractNotFoundException;
+import storage.exceptions.OwnershipNotFoundException;
+import storage.exceptions.OwnershipsNotFoundException;
 import storage.models.dto.asset.getassetinfo.GetAssetInfoRequest;
 import storage.models.dto.asset.getassetinfo.GetAssetInfoResponse;
+import storage.models.dto.contract.getcontract.GetContractRequest;
+import storage.models.dto.contract.getcontract.GetContractResponse;
+import storage.models.dto.contract.savecontract.SaveContractRequest;
+import storage.models.dto.contract.savecontract.SaveContractResponse;
+import storage.models.dto.contractinstance.getcontractinstance.GetContractInstanceRequest;
+import storage.models.dto.contractinstance.getcontractinstance.GetContractInstanceResponse;
+import storage.models.dto.contractinstance.savecontractinstance.SaveContractInstanceRequest;
+import storage.models.dto.contractinstance.savecontractinstance.SaveContractInstanceResponse;
+import storage.models.dto.contractinstance.storestatemachine.function.StoreStateMachineFromFunctionCallRequest;
+import storage.models.dto.contractinstance.storestatemachine.function.StoreStateMachineFromFunctionCallResponse;
+import storage.models.dto.contractinstance.storestatemachine.obligation.StoreStateMachineFromObligationCallRequest;
+import storage.models.dto.contractinstance.storestatemachine.obligation.StoreStateMachineFromObligationCallResponse;
+import storage.models.dto.ownership.addfunds.AddFundsRequest;
+import storage.models.dto.ownership.addfunds.AddFundsResponse;
+import storage.models.dto.ownership.getfund.GetFundRequest;
+import storage.models.dto.ownership.getfund.GetFundResponse;
+import storage.models.dto.ownership.getfunds.GetFundsRequest;
+import storage.models.dto.ownership.getfunds.GetFundsResponse;
+import storage.models.dto.ownership.makeownershipspent.MakeOwnershipSpentRequest;
+import storage.models.dto.ownership.makeownershipspent.MakeOwnershipSpentResponse;
 import storage.module.services.AssetsStorageService;
 import storage.module.services.ContractInstancesStorageService;
 import storage.module.services.ContractsStorageService;
 import storage.module.services.OwnershipsStorageService;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class StorageModule extends Module {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -65,15 +95,141 @@ public class StorageModule extends Module {
     @Override
     public ChannelMessage receiveAndResponse(ChannelMessage message) {
         logger.debug("[{}] from: {}, payload: {}", new Object() {}.getClass().getEnclosingMethod().getName(), message.getSenderModuleId(), message.getPayload());
+        ChannelMessagePayload payload = message.getPayload();
 
-        if (message.getPayload() instanceof GetAssetInfoRequest) {
+        if (payload instanceof GetAssetInfoRequest) {
             try {
-                Asset assetInfo = assetsStorageService.getAssetInfo(((GetAssetInfoRequest) message.getPayload()).getAssetId());
+                Asset assetInfo = assetsStorageService.getAssetInfo(((GetAssetInfoRequest) payload).getAssetId());
                 return new ChannelMessage(this.getId(), new GetAssetInfoResponse(assetInfo));
             } catch (IOException e) {
                 // TODO: handle it
                 throw new RuntimeException(e);
             } catch (AssetNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof SaveContractRequest) {
+            Contract contractToSave = ((SaveContractRequest) payload).getContract();
+            try {
+                String contractId = contractsStorageService.saveContract(contractToSave);
+                return new ChannelMessage(this.getId(), new SaveContractResponse(contractId));
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof GetContractRequest) {
+            String contractId = ((GetContractRequest) payload).getContractId();
+            try {
+                Contract contract = contractsStorageService.getContract(contractId);
+                return new ChannelMessage(this.getId(), new GetContractResponse(contract));
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (ContractNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof SaveContractInstanceRequest) {
+            ContractInstance contractInstance = ((SaveContractInstanceRequest) payload).getContractInstance();
+            try {
+                String contractInstanceId = contractInstancesStorageService.saveContractInstance(contractInstance);
+                return new ChannelMessage(this.getId(), new SaveContractInstanceResponse(contractInstanceId));
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof GetContractInstanceRequest) {
+            String contractInstanceId = ((GetContractInstanceRequest) payload).getContractInstanceId();
+            try {
+                ContractInstance contractInstance = contractInstancesStorageService.getContractInstance(contractInstanceId);
+                return new ChannelMessage(this.getId(), new GetContractInstanceResponse(contractInstance));
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (ContractInstanceNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof StoreStateMachineFromFunctionCallRequest) {
+            String contractInstanceId = ((StoreStateMachineFromFunctionCallRequest) payload).getContractInstanceId();
+            String partyName = ((StoreStateMachineFromFunctionCallRequest) payload).getPartyName();
+            String functionName = ((StoreStateMachineFromFunctionCallRequest) payload).getFunctionName();
+            ArrayList<String> argumentsTypes = ((StoreStateMachineFromFunctionCallRequest) payload).getArgumentsTypes();
+            try {
+                contractInstancesStorageService.storeStateMachine(contractInstanceId, partyName, functionName, argumentsTypes);
+                return new ChannelMessage(this.getId(), new StoreStateMachineFromFunctionCallResponse());
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (ContractInstanceNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof StoreStateMachineFromObligationCallRequest) {
+            String contractInstanceId = ((StoreStateMachineFromObligationCallRequest) payload).getContractInstanceId();
+            String obligationFunctionName = ((StoreStateMachineFromObligationCallRequest) payload).getObligationFunctionName();
+            try {
+                contractInstancesStorageService.storeStateMachine(contractInstanceId, obligationFunctionName);
+                return new ChannelMessage(this.getId(), new StoreStateMachineFromObligationCallResponse());
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (ContractInstanceNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof GetFundRequest) {
+            String address = ((GetFundRequest) payload).getAddress();
+            String ownershipId = ((GetFundRequest) payload).getOwnershipId();
+            try {
+                Ownership fund = ownershipsStorageService.getFund(address, ownershipId);
+                return new ChannelMessage(this.getId(), new GetFundResponse(fund));
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (OwnershipsNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (OwnershipNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof GetFundsRequest) {
+            String address = ((GetFundsRequest) payload).getAddress();
+            try {
+                ArrayList<Ownership> funds = ownershipsStorageService.getFunds(address);
+                return new ChannelMessage(this.getId(), new GetFundsResponse(funds));
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (OwnershipsNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof AddFundsRequest) {
+            HashMap<String, SingleUseSeal> funds = ((AddFundsRequest) payload).getFunds();
+            try {
+                ownershipsStorageService.addFunds(funds);
+                return new ChannelMessage(this.getId(), new AddFundsResponse());
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            }
+        } else if (payload instanceof MakeOwnershipSpentRequest) {
+            String address = ((MakeOwnershipSpentRequest) payload).getAddress();
+            String ownershipId = ((MakeOwnershipSpentRequest) payload).getOwnershipId();
+            String contractInstanceId = ((MakeOwnershipSpentRequest) payload).getContractInstanceId();
+            String unlockScript = ((MakeOwnershipSpentRequest) payload).getUnlockScript();
+            try {
+                ownershipsStorageService.makeOwnershipSpent(address, ownershipId, contractInstanceId, unlockScript);
+                return new ChannelMessage(this.getId(), new MakeOwnershipSpentResponse());
+            } catch (IOException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (OwnershipsNotFoundException e) {
+                // TODO: handle it
+                throw new RuntimeException(e);
+            } catch (OwnershipNotFoundException e) {
                 // TODO: handle it
                 throw new RuntimeException(e);
             }

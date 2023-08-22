@@ -101,6 +101,7 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
         mutex.unlock();
     }*/
 
+    // FIXME: return a boolean (true --> success, false --> otherwise)
     /**
      * Store the updates of the state machine when a function has been called.
      *
@@ -131,6 +132,7 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
         mutex.unlock();
     }
 
+    // FIXME: return a boolean (true --> success, false --> otherwise)
     /**
      * Store the updates of the state machine when an obligation function has been called.
      *

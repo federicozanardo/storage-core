@@ -1,6 +1,7 @@
 package storage.module.services;
 
 import lcp.lib.models.ownership.Ownership;
+import lcp.lib.models.singleuseseal.Amount;
 import lcp.lib.models.singleuseseal.SingleUseSeal;
 import storage.constants.Constants;
 import storage.exceptions.OwnershipNotFoundException;
@@ -27,7 +28,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
     }
 
     public void seed() throws IOException {
-        /*String assetId = "stipula_coin_asd345";
+        String assetId = "stipula_coin_asd345";
         String aliceAssetId = "stipula_assetA_ed8i9wk";
         String bobAssetId = "stipula_assetB_pl1n5cc";
 
@@ -38,9 +39,9 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         String bobOwnershipId = "7a19f50e-eae9-461d-bd58-9946ea39ccf0";
         String borrowerOwnershipId = "1ce080e5-8c81-48d1-b732-006fa1cc4e2e";
 
-        RealType amountAliceOwnership = new RealType(1400, 2);
-        RealType amountBobOwnership = new RealType(1100, 2);
-        RealType amountBorrowerOwnership = new RealType(1200, 2);
+        Amount amountAliceOwnership = new Amount(1400, 2);
+        Amount amountBobOwnership = new Amount(1100, 2);
+        Amount amountBorrowerOwnership = new Amount(1200, 2);
 
         levelDb = factory.open(new File(String.valueOf(Constants.OWNERSHIPS_PATH)), new Options());
 
@@ -78,7 +79,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
 
         System.out.println("seed: aliceOwnershipId => " + aliceOwnershipId);
         System.out.println("seed: bobOwnershipId => " + bobOwnershipId);
-        System.out.println("seed: borrowerOwnershipId => " + borrowerOwnershipId);*/
+        System.out.println("seed: borrowerOwnershipId => " + borrowerOwnershipId);
     }
 
     /**
@@ -156,6 +157,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         return fund;
     }
 
+    // FIXME: return a boolean (true --> success, false --> otherwise)
     /**
      * This method allows to add new funds.
      *
@@ -189,6 +191,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         mutex.unlock();
     }
 
+    // FIXME: return a boolean (true --> success, false --> otherwise)
     /**
      * This method allows to make spent a ownership.
      *
