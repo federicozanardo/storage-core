@@ -5,7 +5,8 @@ import lcp.lib.models.assets.FungibleAsset;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 import storage.constants.Constants;
-import storage.exceptions.AssetNotFoundException;
+import storage.core.lib.exceptions.AssetNotFoundException;
+import storage.core.lib.module.services.IAssetsStorageService;
 import storage.module.services.StorageSerializer;
 
 import java.io.File;

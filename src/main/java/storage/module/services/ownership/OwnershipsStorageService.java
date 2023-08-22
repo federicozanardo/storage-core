@@ -6,8 +6,9 @@ import lcp.lib.models.singleuseseal.SingleUseSeal;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 import storage.constants.Constants;
-import storage.exceptions.OwnershipNotFoundException;
-import storage.exceptions.OwnershipsNotFoundException;
+import storage.core.lib.exceptions.OwnershipNotFoundException;
+import storage.core.lib.exceptions.OwnershipsNotFoundException;
+import storage.core.lib.module.services.IOwnershipsStorageService;
 import storage.module.services.StorageSerializer;
 
 import java.io.File;

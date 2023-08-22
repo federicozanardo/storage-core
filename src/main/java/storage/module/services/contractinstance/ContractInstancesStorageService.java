@@ -4,7 +4,8 @@ import lcp.lib.models.contract.ContractInstance;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
 import storage.constants.Constants;
-import storage.exceptions.ContractInstanceNotFoundException;
+import storage.core.lib.exceptions.ContractInstanceNotFoundException;
+import storage.core.lib.module.services.IContractInstancesStorageService;
 import storage.module.services.StorageSerializer;
 
 import java.io.File;

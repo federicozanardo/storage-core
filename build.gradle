@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'storage.core'
-version = '0.1.6'
+version = '0.1.7'
 
 repositories {
     mavenCentral()
@@ -12,6 +12,7 @@ repositories {
 
 dependencies {
     implementation 'com.github.federicozanardo:lcp-lib:v0.1.31'
+    implementation 'com.github.federicozanardo:storage-core-lib:v0.1.0'
 
     // implementation 'org.rocksdb:rocksdbjni:8.3.2'
 
