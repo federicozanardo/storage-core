@@ -3,33 +3,32 @@ package storage.module.services.ownership;
 import lcp.lib.models.ownership.Ownership;
 import lcp.lib.models.singleuseseal.Amount;
 import lcp.lib.models.singleuseseal.SingleUseSeal;
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.Options;
+import org.rocksdb.Options;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
 import storage.constants.Constants;
-import storage.core.lib.exceptions.OwnershipNotFoundException;
-import storage.core.lib.exceptions.OwnershipsNotFoundException;
+import storage.core.lib.exceptions.database.DatabaseException;
+import storage.core.lib.exceptions.services.ownership.OwnershipNotFoundException;
+import storage.core.lib.exceptions.services.ownership.OwnershipsNotFoundException;
 import storage.core.lib.module.services.IOwnershipsStorageService;
+import storage.exceptions.RocksDBDatabaseException;
 import storage.module.services.StorageSerializer;
+import storage.utils.RocksDBUtils;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
-import java.util.concurrent.locks.ReentrantLock;
 
-import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
-import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
+import static org.rocksdb.util.ByteUtil.bytes;
 
 public class OwnershipsStorageService extends StorageSerializer<ArrayList<Ownership>> implements IOwnershipsStorageService {
-    private DB levelDb;
-    private final ReentrantLock mutex;
+    private RocksDB db;
 
     public OwnershipsStorageService() {
-        this.mutex = new ReentrantLock();
+        RocksDB.loadLibrary();
     }
 
-    public void seed() throws IOException {
+    public void seed() throws RocksDBDatabaseException {
         String assetId = "stipula_coin_asd345";
         String aliceAssetId = "stipula_assetA_ed8i9wk";
         String bobAssetId = "stipula_assetB_pl1n5cc";
@@ -45,13 +44,14 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         Amount amountBobOwnership = new Amount(1100, 2);
         Amount amountBorrowerOwnership = new Amount(1200, 2);
 
-        levelDb = factory.open(new File(String.valueOf(Constants.OWNERSHIPS_PATH)), new Options());
+        db = RocksDBUtils.open();
 
         ArrayList<Ownership> funds = null;
 
         try {
-            funds = this.deserialize(levelDb.get(bytes(aliceAddress)));
+            funds = this.deserialize(db.get(bytes(aliceAddress)));
         } catch (Exception exception) {
+            db.close();
             System.out.println("seed: This address does not have any asset saved in the storage");
         }
 
@@ -60,13 +60,19 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         }
 
         funds.add(new Ownership(aliceOwnershipId, new SingleUseSeal(aliceAssetId, amountAliceOwnership, aliceAddress)));
-        levelDb.put(bytes(aliceAddress), this.serialize(funds));
+        try {
+            db.put(bytes(aliceAddress), this.serialize(funds));
+        } catch (RocksDBException e) {
+            db.close();
+            throw new RuntimeException(e);
+        }
 
         funds = null;
 
         try {
-            funds = this.deserialize(levelDb.get(bytes(bobAddress)));
+            funds = this.deserialize(db.get(bytes(bobAddress)));
         } catch (Exception exception) {
+            db.close();
             System.out.println("seed: This address does not have any asset saved in the storage");
         }
 
@@ -76,60 +82,94 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
 
         funds.add(new Ownership(bobOwnershipId, new SingleUseSeal(bobAssetId, amountBobOwnership, bobAddress)));
         funds.add(new Ownership(borrowerOwnershipId, new SingleUseSeal(assetId, amountBorrowerOwnership, bobAddress)));
-        levelDb.put(bytes(bobAddress), this.serialize(funds));
-        levelDb.close();
 
-        System.out.println("seed: aliceOwnershipId => " + aliceOwnershipId);
+        try {
+            db.put(bytes(bobAddress), this.serialize(funds));
+        } catch (RocksDBException e) {
+            throw new RuntimeException(e);
+        } finally {
+            db.close();
+        }
+
+        /*System.out.println("seed: aliceOwnershipId => " + aliceOwnershipId);
         System.out.println("seed: bobOwnershipId => " + bobOwnershipId);
-        System.out.println("seed: borrowerOwnershipId => " + borrowerOwnershipId);
+        System.out.println("seed: borrowerOwnershipId => " + borrowerOwnershipId);*/
     }
 
-    /**
-     * This method allows to get the funds associated to a given address.
-     *
-     * @param address: it is needed in order to search the funds associated.
-     * @return the funds associated to the address.
-     * @throws IOException:                throws when an error occur while opening or closing the connection with the storage.
-     * @throws OwnershipsNotFoundException : throws when there are no funds associated to the given address.
-     */
-    public ArrayList<Ownership> getFunds(String address) throws IOException, OwnershipsNotFoundException {
-        mutex.lock();
-        levelDb = factory.open(new File(String.valueOf(Constants.OWNERSHIPS_PATH)), new Options());
+    // FIXME: return a boolean (true --> success, false --> otherwise)
 
-        ArrayList<Ownership> funds = this.deserialize(levelDb.get(bytes(address)));
-        if (funds == null) {
-            levelDb.close();
-            mutex.unlock();
+    public void addOwnerships(HashMap<String, SingleUseSeal> funds) throws DatabaseException {
+        db = RocksDBUtils.open();
+
+        for (HashMap.Entry<String, SingleUseSeal> entry : funds.entrySet()) {
+            String address = entry.getKey();
+            ArrayList<Ownership> currentFunds;
+
+            // Try to get the funds associate to the address
+            try {
+                currentFunds = this.deserialize(db.get(bytes(address)));
+            } catch (RocksDBException e) {
+                throw new RocksDBDatabaseException("Error while reading from database", e);
+            }
+
+            if (currentFunds == null) {
+                // TODO: log
+                // System.out.println("addFund: This address does not have any asset saved in the storage");
+                currentFunds = new ArrayList<>();
+            }
+
+            // TODO: check that the id is unique
+            String ownershipId = UUID.randomUUID().toString();
+            Ownership ownership = new Ownership(ownershipId, entry.getValue());
+            currentFunds.add(ownership);
+
+            try {
+                db.put(bytes(address), this.serialize(currentFunds));
+            } catch (RocksDBException e) {
+                throw new RocksDBDatabaseException("Error while writing to database", e);
+            } finally {
+                db.close();
+            }
+        }
+
+        db.close();
+    }
+
+    public ArrayList<Ownership> getOwnerships(String address) throws OwnershipsNotFoundException, DatabaseException {
+        db = RocksDBUtils.open();
+
+        ArrayList<Ownership> ownerships;
+        try {
+            ownerships = this.deserialize(db.get(bytes(address)));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while reading from database", e);
+        } finally {
+            db.close();
+        }
+
+        if (ownerships == null) {
             throw new OwnershipsNotFoundException(address);
         }
 
-        levelDb.close();
-        mutex.unlock();
-        return funds;
+        return ownerships;
     }
 
-    /**
-     * This method allows to get a specific ownership, given an address.
-     *
-     * @param address:     the address associated to the ownership to obtain.
-     * @param ownershipId: the id of the specific ownership to obtain.
-     * @return the fund associated to the address.
-     * @throws IOException:                 throws when an error occur while opening or closing the connection with the storage.
-     * @throws OwnershipsNotFoundException: throws when there are no funds associated to the given address.
-     * @throws OwnershipNotFoundException:  throws when the ownership id is not referred to the given address or to any ownership saved in the storage.
-     */
-    public Ownership getFund(String address, String ownershipId)
-            throws IOException,
-            OwnershipsNotFoundException,
-            OwnershipNotFoundException {
-        mutex.lock();
+    public Ownership getOwnership(String address, String ownershipId)
+            throws OwnershipsNotFoundException,
+            OwnershipNotFoundException,
+            DatabaseException {
+        db = RocksDBUtils.open();
 
-        levelDb = factory.open(new File(String.valueOf(Constants.OWNERSHIPS_PATH)), new Options());
-        ArrayList<Ownership> funds = this.deserialize(levelDb.get(bytes(address)));
+        ArrayList<Ownership> funds;
+        try {
+            funds = this.deserialize(db.get(bytes(address)));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while reading from database", e);
+        } finally {
+            db.close();
+        }
 
         if (funds == null) {
-            levelDb.close();
-            mutex.unlock();
             throw new OwnershipsNotFoundException(address);
         }
 
@@ -149,78 +189,34 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         }
 
         if (!found) {
-            levelDb.close();
-            mutex.unlock();
             throw new OwnershipNotFoundException(address, ownershipId);
         }
 
-        levelDb.close();
-        mutex.unlock();
         return fund;
     }
 
     // FIXME: return a boolean (true --> success, false --> otherwise)
 
-    /**
-     * This method allows to add new funds.
-     *
-     * @param funds: the funds to be stored.
-     * @throws IOException: throws when an error occur while opening or closing the connection with the storage.
-     */
-    public void addFunds(HashMap<String, SingleUseSeal> funds) throws IOException {
-        mutex.lock();
-        levelDb = factory.open(new File(String.valueOf(Constants.OWNERSHIPS_PATH)), new Options());
-
-        for (HashMap.Entry<String, SingleUseSeal> entry : funds.entrySet()) {
-            String address = entry.getKey();
-            ArrayList<Ownership> currentFunds;
-
-            // Try to get the funds associate to the address
-            currentFunds = this.deserialize(levelDb.get(bytes(address)));
-
-            if (currentFunds == null) {
-                System.out.println("addFund: This address does not have any asset saved in the storage");
-                currentFunds = new ArrayList<>();
-            }
-
-            // TODO: check that the id is unique
-            String ownershipId = UUID.randomUUID().toString();
-            Ownership ownership = new Ownership(ownershipId, entry.getValue());
-            currentFunds.add(ownership);
-            levelDb.put(bytes(address), this.serialize(currentFunds));
-        }
-
-        levelDb.close();
-        mutex.unlock();
-    }
-
-    // FIXME: return a boolean (true --> success, false --> otherwise)
-
-    /**
-     * This method allows to make spent a ownership.
-     *
-     * @param address:            the address associated to the ownership to make spent.
-     * @param ownershipId:        the id of the specific ownership to make spent.
-     * @param contractInstanceId: id of the contract instance to find in the storage.
-     * @param unlockScript:       the first part of the script that can prove the spendability of the ownership.
-     * @throws IOException:                 throws when an error occur while opening or closing the connection with the storage.
-     * @throws OwnershipsNotFoundException: throws when there are no funds associated to the given address.
-     * @throws OwnershipNotFoundException:  throws when the ownership id is not referred to the given address or to any ownership saved in the storage.
-     */
-    public void makeOwnershipSpent(
+    public void spendOwnership(
             String address,
             String ownershipId,
             String contractInstanceId,
             String unlockScript
-    ) throws IOException, OwnershipsNotFoundException, OwnershipNotFoundException {
-        mutex.lock();
+    ) throws OwnershipsNotFoundException,
+            OwnershipNotFoundException,
+            DatabaseException {
+        db = RocksDBUtils.open();
 
-        levelDb = factory.open(new File(String.valueOf(Constants.OWNERSHIPS_PATH)), new Options());
-        ArrayList<Ownership> funds = this.deserialize(levelDb.get(bytes(address)));
+        ArrayList<Ownership> funds;
+        try {
+            funds = this.deserialize(db.get(bytes(address)));
+        } catch (RocksDBException e) {
+            db.close();
+            throw new RocksDBDatabaseException("Error while reading from database", e);
+        }
 
         if (funds == null) {
-            levelDb.close();
-            mutex.unlock();
+            db.close();
             throw new OwnershipsNotFoundException(address);
         }
 
@@ -238,8 +234,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         }
 
         if (!found) {
-            levelDb.close();
-            mutex.unlock();
+            db.close();
             throw new OwnershipNotFoundException(address, ownershipId);
         }
 
@@ -248,8 +243,12 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         funds.get(i).setUnlockScript(unlockScript);
 
         // Save
-        levelDb.put(bytes(address), this.serialize(funds));
-        levelDb.close();
-        mutex.unlock();
+        try {
+            db.put(bytes(address), this.serialize(funds));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while writing to database", e);
+        } finally {
+            db.close();
+        }
     }
 }

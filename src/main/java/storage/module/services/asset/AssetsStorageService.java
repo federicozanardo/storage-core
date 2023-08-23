@@ -2,29 +2,25 @@ package storage.module.services.asset;
 
 import lcp.lib.models.assets.Asset;
 import lcp.lib.models.assets.FungibleAsset;
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.Options;
-import storage.constants.Constants;
-import storage.core.lib.exceptions.AssetNotFoundException;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import storage.core.lib.exceptions.database.DatabaseException;
+import storage.core.lib.exceptions.services.asset.AssetNotFoundException;
 import storage.core.lib.module.services.IAssetsStorageService;
+import storage.exceptions.RocksDBDatabaseException;
 import storage.module.services.StorageSerializer;
+import storage.utils.RocksDBUtils;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.locks.ReentrantLock;
-
-import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
-import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
+import static org.rocksdb.util.ByteUtil.bytes;
 
 public class AssetsStorageService extends StorageSerializer<Asset> implements IAssetsStorageService {
-    private DB levelDb;
-    private final ReentrantLock mutex;
+    private RocksDB db;
 
     public AssetsStorageService() {
-        this.mutex = new ReentrantLock();
+        RocksDB.loadLibrary();
     }
 
-    public void seed() throws IOException {
+    public void seed() throws RocksDBDatabaseException {
         String assetId = "stipula_coin_asd345";
         String aliceAssetId = "stipula_assetA_ed8i9wk";
         String bobAssetId = "stipula_assetB_pl1n5cc";
@@ -37,38 +33,38 @@ public class AssetsStorageService extends StorageSerializer<Asset> implements IA
         Asset assetA = new Asset(aliceAssetId, assetAConfig);
         Asset assetB = new Asset(bobAssetId, assetBConfig);
 
-        levelDb = factory.open(new File(String.valueOf(Constants.ASSETS_PATH)), new Options());
-        levelDb.put(bytes(assetId), this.serialize(stipulaCoin));
-        levelDb.put(bytes(aliceAssetId), this.serialize(assetA));
-        levelDb.put(bytes(bobAssetId), this.serialize(assetB));
-        levelDb.close();
+        db = RocksDBUtils.open();
+        try {
+            db.put(bytes(assetId), this.serialize(stipulaCoin));
+            db.put(bytes(aliceAssetId), this.serialize(assetA));
+            db.put(bytes(bobAssetId), this.serialize(assetB));
+        } catch (RocksDBException e) {
+            throw new RuntimeException(e);
+        } finally {
+            db.close();
+        }
 
-        System.out.println("seed: assetId => " + assetId);
+        /*System.out.println("seed: assetId => " + assetId);
         System.out.println("seed: aliceAssetId => " + aliceAssetId);
-        System.out.println("seed: bobAssetId => " + bobAssetId);
+        System.out.println("seed: bobAssetId => " + bobAssetId);*/
     }
 
-    /**
-     * Get the asset information, given an asset id.
-     *
-     * @param assetId: id of the asset to find in the storage.
-     * @return the asset information.
-     * @throws IOException:            throws when an error occur while opening or closing the connection with the storage.
-     * @throws AssetNotFoundException: throws when the asset id is not referred to any asset saved in the storage.
-     */
-    public Asset getAssetInfo(String assetId) throws IOException, AssetNotFoundException {
-        mutex.lock();
-        levelDb = factory.open(new File(String.valueOf(Constants.ASSETS_PATH)), new Options());
+    public Asset getAssetInfo(String assetId) throws AssetNotFoundException, DatabaseException {
+        db = RocksDBUtils.open();
 
-        Asset asset = this.deserialize(levelDb.get(bytes(assetId)));
+        Asset asset;
+        try {
+            asset = this.deserialize(db.get(bytes(assetId)));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while reading from database", e);
+        } finally {
+            db.close();
+        }
+
         if (asset == null) {
-            levelDb.close();
-            mutex.unlock();
             throw new AssetNotFoundException(assetId);
         }
 
-        levelDb.close();
-        mutex.unlock();
         return asset;
     }
 }

@@ -1,80 +1,63 @@
 package storage.module.services.contractinstance;
 
 import lcp.lib.models.contract.ContractInstance;
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.Options;
-import storage.constants.Constants;
-import storage.core.lib.exceptions.ContractInstanceNotFoundException;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import storage.core.lib.exceptions.database.DatabaseException;
+import storage.core.lib.exceptions.services.contractinstance.ContractInstanceNotFoundException;
 import storage.core.lib.module.services.IContractInstancesStorageService;
+import storage.exceptions.RocksDBDatabaseException;
 import storage.module.services.StorageSerializer;
+import storage.utils.RocksDBUtils;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.UUID;
-import java.util.concurrent.locks.ReentrantLock;
 
-import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
-import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
+import static org.rocksdb.util.ByteUtil.bytes;
 
 public class ContractInstancesStorageService extends StorageSerializer<ContractInstance> implements IContractInstancesStorageService {
-    public DB levelDb;
-    private final ReentrantLock mutex;
+    public RocksDB db;
 
     public ContractInstancesStorageService() {
-        this.mutex = new ReentrantLock();
+        RocksDB.loadLibrary();
     }
 
-    /**
-     * Store a new contract instance.
-     *
-     * @param contractInstance: the new instance of the contract to save in the storage.
-     * @throws IOException: throws when an error occur while opening or closing the connection with the storage.
-     */
-    public String saveContractInstance(ContractInstance contractInstance) throws IOException {
-        mutex.lock();
-        levelDb = factory.open(new File(String.valueOf(Constants.CONTRACT_INSTANCES_PATH)), new Options());
+    public ContractInstance getContractInstance(String contractInstanceId) throws ContractInstanceNotFoundException, DatabaseException {
+        db = RocksDBUtils.open();
 
-        // TODO: check that the id is unique
-        String contractInstanceId = UUID.randomUUID().toString();
-        levelDb.put(bytes(contractInstanceId), this.serialize(contractInstance));
+        ContractInstance contractInstance;
+        try {
+            contractInstance = this.deserialize(db.get(bytes(contractInstanceId)));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while reading from database", e);
+        } finally {
+            db.close();
+        }
 
-        levelDb.close();
-        mutex.unlock();
-        return contractInstanceId;
-    }
-
-    /**
-     * Get the contract instance information, given a contract instance id.
-     *
-     * @param contractInstanceId: id of the contract instance to find in the storage.
-     * @return the contract instance information.
-     * @throws IOException: throws when an error occur while opening or closing the connection with the storage.
-     */
-    public ContractInstance getContractInstance(String contractInstanceId) throws IOException, ContractInstanceNotFoundException {
-        mutex.lock();
-        levelDb = factory.open(new File(String.valueOf(Constants.CONTRACT_INSTANCES_PATH)), new Options());
-
-        ContractInstance contractInstance = this.deserialize(levelDb.get(bytes(contractInstanceId)));
         if (contractInstance == null) {
-            levelDb.close();
-            mutex.unlock();
             throw new ContractInstanceNotFoundException(contractInstanceId);
         }
 
-        levelDb.close();
-        mutex.unlock();
         return contractInstance;
     }
 
+    public String saveContractInstance(ContractInstance contractInstance) throws DatabaseException {
+        db = RocksDBUtils.open();
+
+        // TODO: check that the id is unique
+        String contractInstanceId = UUID.randomUUID().toString();
+        try {
+            db.put(bytes(contractInstanceId), this.serialize(contractInstance));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while writing to database", e);
+        } finally {
+            db.close();
+        }
+
+        return contractInstanceId;
+    }
+
     // FIXME
-    /**
-     * This method allows to store the global space in the storage.
-     *
-     * @param contractInstanceId: id of the contract instance in which store the new global space values.
-     * @param updates:            new global space values to store.
-     * @throws IOException: throws when an error occur while opening or closing the connection with the storage.
-     */
     /*public void storeGlobalSpace(String contractInstanceId, HashMap<String, TraceChange> updates)
             throws IOException,
             ContractInstanceNotFoundException {
@@ -105,63 +88,61 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
 
     // FIXME: return a boolean (true --> success, false --> otherwise)
 
-    /**
-     * Store the updates of the state machine when a function has been called.
-     *
-     * @param contractInstanceId: id of the contract instance to find in the storage.
-     * @param partyName:          the party that made the request.
-     * @param functionName:       the name of the function called.
-     * @param argumentsTypes:     the argument types of the function called.
-     * @throws IOException:                       throws when an error occur while opening or closing the connection with the storage.
-     * @throws ContractInstanceNotFoundException: throws when the contract instance required does not exist in the storage.
-     */
-    public void storeStateMachine(String contractInstanceId, String partyName, String functionName, ArrayList<String> argumentsTypes)
-            throws IOException,
-            ContractInstanceNotFoundException {
-        mutex.lock();
-        levelDb = factory.open(new File(String.valueOf(Constants.CONTRACT_INSTANCES_PATH)), new Options());
+    public void saveStateMachine(String contractInstanceId, String partyName, String functionName, ArrayList<String> argumentsTypes)
+            throws ContractInstanceNotFoundException,
+            DatabaseException {
+        db = RocksDBUtils.open();
 
-        ContractInstance contractInstance = this.deserialize(levelDb.get(bytes(contractInstanceId)));
+        ContractInstance contractInstance;
+        try {
+            contractInstance = this.deserialize(db.get(bytes(contractInstanceId)));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while reading from database", e);
+        }
+
         if (contractInstance == null) {
-            levelDb.close();
-            mutex.unlock();
+            db.close();
             throw new ContractInstanceNotFoundException(contractInstanceId);
         }
 
+        // FIXME
         contractInstance.getStateMachine().nextState(partyName, functionName, argumentsTypes);
-        levelDb.put(bytes(contractInstanceId), this.serialize(contractInstance));
-
-        levelDb.close();
-        mutex.unlock();
+        try {
+            db.put(bytes(contractInstanceId), this.serialize(contractInstance));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while writing to database", e);
+        } finally {
+            db.close();
+        }
     }
 
     // FIXME: return a boolean (true --> success, false --> otherwise)
 
-    /**
-     * Store the updates of the state machine when an obligation function has been called.
-     *
-     * @param contractInstanceId:     id of the contract instance to find in the storage.
-     * @param obligationFunctionName: the name of the obligation function called.
-     * @throws IOException:                       throws when an error occur while opening or closing the connection with the storage.
-     * @throws ContractInstanceNotFoundException: throws when the contract instance required does not exist in the storage.
-     */
-    public void storeStateMachine(String contractInstanceId, String obligationFunctionName)
-            throws IOException,
-            ContractInstanceNotFoundException {
-        mutex.lock();
-        levelDb = factory.open(new File(String.valueOf(Constants.CONTRACT_INSTANCES_PATH)), new Options());
+    public void saveStateMachine(String contractInstanceId, String obligationFunctionName)
+            throws ContractInstanceNotFoundException,
+            DatabaseException {
+        db = RocksDBUtils.open();
 
-        ContractInstance contractInstance = this.deserialize(levelDb.get(bytes(contractInstanceId)));
+        ContractInstance contractInstance;
+        try {
+            contractInstance = this.deserialize(db.get(bytes(contractInstanceId)));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while reading from database", e);
+        }
+
         if (contractInstance == null) {
-            levelDb.close();
-            mutex.unlock();
+            db.close();
             throw new ContractInstanceNotFoundException(contractInstanceId);
         }
 
+        // FIXME
         contractInstance.getStateMachine().nextState(obligationFunctionName);
-        levelDb.put(bytes(contractInstanceId), this.serialize(contractInstance));
-
-        levelDb.close();
-        mutex.unlock();
+        try {
+            db.put(bytes(contractInstanceId), this.serialize(contractInstance));
+        } catch (RocksDBException e) {
+            throw new RocksDBDatabaseException("Error while writing to database", e);
+        } finally {
+            db.close();
+        }
     }
 }
