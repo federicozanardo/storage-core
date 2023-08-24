@@ -3,6 +3,7 @@ package storage.module.services.contractinstance;
 import lcp.lib.models.contract.ContractInstance;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import storage.constants.Constants;
 import storage.core.lib.exceptions.database.DatabaseException;
 import storage.core.lib.exceptions.services.contractinstance.ContractInstanceNotFoundException;
 import storage.core.lib.module.services.IContractInstancesStorageService;
@@ -23,7 +24,7 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
     }
 
     public ContractInstance getContractInstance(String contractInstanceId) throws ContractInstanceNotFoundException, DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.CONTRACT_INSTANCES_PATH));
 
         ContractInstance contractInstance;
         try {
@@ -42,7 +43,7 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
     }
 
     public String saveContractInstance(ContractInstance contractInstance) throws DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.CONTRACT_INSTANCES_PATH));
 
         // TODO: check that the id is unique
         String contractInstanceId = UUID.randomUUID().toString();
@@ -91,7 +92,7 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
     public void saveStateMachine(String contractInstanceId, String partyName, String functionName, ArrayList<String> argumentsTypes)
             throws ContractInstanceNotFoundException,
             DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.CONTRACT_INSTANCES_PATH));
 
         ContractInstance contractInstance;
         try {
@@ -121,7 +122,7 @@ public class ContractInstancesStorageService extends StorageSerializer<ContractI
     public void saveStateMachine(String contractInstanceId, String obligationFunctionName)
             throws ContractInstanceNotFoundException,
             DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.CONTRACT_INSTANCES_PATH));
 
         ContractInstance contractInstance;
         try {

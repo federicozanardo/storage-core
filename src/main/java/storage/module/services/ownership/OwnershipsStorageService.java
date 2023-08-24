@@ -44,7 +44,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
         Amount amountBobOwnership = new Amount(1100, 2);
         Amount amountBorrowerOwnership = new Amount(1200, 2);
 
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.OWNERSHIPS_PATH));
 
         ArrayList<Ownership> funds = null;
 
@@ -99,7 +99,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
     // FIXME: return a boolean (true --> success, false --> otherwise)
 
     public void addOwnerships(HashMap<String, SingleUseSeal> funds) throws DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.OWNERSHIPS_PATH));
 
         for (HashMap.Entry<String, SingleUseSeal> entry : funds.entrySet()) {
             String address = entry.getKey();
@@ -136,7 +136,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
     }
 
     public ArrayList<Ownership> getOwnerships(String address) throws OwnershipsNotFoundException, DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.OWNERSHIPS_PATH));
 
         ArrayList<Ownership> ownerships;
         try {
@@ -158,7 +158,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
             throws OwnershipsNotFoundException,
             OwnershipNotFoundException,
             DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.OWNERSHIPS_PATH));
 
         ArrayList<Ownership> funds;
         try {
@@ -205,7 +205,7 @@ public class OwnershipsStorageService extends StorageSerializer<ArrayList<Owners
     ) throws OwnershipsNotFoundException,
             OwnershipNotFoundException,
             DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.OWNERSHIPS_PATH));
 
         ArrayList<Ownership> funds;
         try {

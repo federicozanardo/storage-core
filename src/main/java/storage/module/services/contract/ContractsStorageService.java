@@ -3,6 +3,7 @@ package storage.module.services.contract;
 import lcp.lib.models.contract.Contract;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import storage.constants.Constants;
 import storage.core.lib.exceptions.database.DatabaseException;
 import storage.core.lib.exceptions.services.contract.ContractNotFoundException;
 import storage.core.lib.module.services.IContractsStorageService;
@@ -22,7 +23,7 @@ public class ContractsStorageService extends StorageSerializer<Contract> impleme
     }
 
     public Contract getContract(String contractId) throws ContractNotFoundException, DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.CONTRACTS_PATH));
 
         Contract contract;
         try {
@@ -41,7 +42,7 @@ public class ContractsStorageService extends StorageSerializer<Contract> impleme
     }
 
     public String saveContract(Contract contract) throws DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.CONTRACTS_PATH));
 
         // TODO: check that the id is unique
         String contractId = UUID.randomUUID().toString();

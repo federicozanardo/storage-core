@@ -19,23 +19,11 @@ public class RocksDBUtils {
         return db;
     }
 
-    public static RocksDB open(Options options) throws RocksDBDatabaseException {
+    public static RocksDB open(String path) throws RocksDBDatabaseException {
         RocksDB db;
 
         try {
-            db = RocksDB.open(options, String.valueOf(Constants.ASSETS_PATH));
-        } catch (RocksDBException e) {
-            throw new RocksDBDatabaseException("Error while opening the database", e);
-        }
-
-        return db;
-    }
-
-    public static RocksDB open() throws RocksDBDatabaseException {
-        RocksDB db;
-
-        try {
-            db = RocksDB.open(new Options(), String.valueOf(Constants.ASSETS_PATH));
+            db = RocksDB.open(new Options(), path);
         } catch (RocksDBException e) {
             throw new RocksDBDatabaseException("Error while opening the database", e);
         }

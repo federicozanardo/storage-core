@@ -4,6 +4,7 @@ import lcp.lib.models.assets.Asset;
 import lcp.lib.models.assets.FungibleAsset;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import storage.constants.Constants;
 import storage.core.lib.exceptions.database.DatabaseException;
 import storage.core.lib.exceptions.services.asset.AssetNotFoundException;
 import storage.core.lib.module.services.IAssetsStorageService;
@@ -33,7 +34,7 @@ public class AssetsStorageService extends StorageSerializer<Asset> implements IA
         Asset assetA = new Asset(aliceAssetId, assetAConfig);
         Asset assetB = new Asset(bobAssetId, assetBConfig);
 
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.ASSETS_PATH));
         try {
             db.put(bytes(assetId), this.serialize(stipulaCoin));
             db.put(bytes(aliceAssetId), this.serialize(assetA));
@@ -50,7 +51,7 @@ public class AssetsStorageService extends StorageSerializer<Asset> implements IA
     }
 
     public Asset getAssetInfo(String assetId) throws AssetNotFoundException, DatabaseException {
-        db = RocksDBUtils.open();
+        db = RocksDBUtils.open(String.valueOf(Constants.ASSETS_PATH));
 
         Asset asset;
         try {
