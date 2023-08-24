@@ -3,7 +3,6 @@ package storage.module.services.ownership;
 import lcp.lib.models.ownership.Ownership;
 import lcp.lib.models.singleuseseal.Amount;
 import lcp.lib.models.singleuseseal.SingleUseSeal;
-import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import storage.constants.Constants;

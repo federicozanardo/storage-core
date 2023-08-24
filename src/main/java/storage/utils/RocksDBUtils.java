@@ -3,7 +3,6 @@ package storage.utils;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import storage.constants.Constants;
 import storage.exceptions.RocksDBDatabaseException;
 
 public class RocksDBUtils {
